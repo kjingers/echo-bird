@@ -1,73 +1,149 @@
-# React + TypeScript + Vite
+# Echo Bird - Text-to-Speech Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, polished text-to-speech web application powered by Azure Cognitive Services Speech SDK.
 
-Currently, two official plugins are available:
+**Live App**: [https://yellow-meadow-01d67dd10.4.azurestaticapps.net](https://yellow-meadow-01d67dd10.4.azurestaticapps.net)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **100+ Neural Voices** - Access to Azure's full library of neural TTS voices
+- **Multi-language Support** - Voices in dozens of languages and locales
+- **Voice Styles** - Adjust speaking styles (cheerful, sad, angry, etc.) for supported voices
+- **Real-time Synthesis** - Text-to-speech conversion happens in your browser
+- **Audio Player** - Built-in player with waveform visualization, progress bar, and volume control
+- **Download MP3** - Save synthesized audio as MP3 files
+- **Modern UI** - Glass morphism design with smooth animations
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Architecture
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Browser                               │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  React App (Vite + TypeScript)                          ││
+│  │  ┌─────────┐  ┌──────────────┐  ┌────────────────┐     ││
+│  │  │ TTSForm │→ │ useSynthesis │→ │ speechService  │     ││
+│  │  └─────────┘  └──────────────┘  └───────┬────────┘     ││
+│  │                                         │               ││
+│  │  ┌─────────────┐  ┌─────────────┐      │               ││
+│  │  │ AudioPlayer │  │ useVoices   │      │               ││
+│  │  └─────────────┘  └──────┬──────┘      │               ││
+│  └──────────────────────────┼─────────────┼───────────────┘│
+└─────────────────────────────┼─────────────┼─────────────────┘
+                              │             │
+                              ▼             ▼
+                    ┌─────────────────────────────────┐
+                    │   Azure Speech SDK (Browser)    │
+                    │   microsoft-cognitiveservices   │
+                    │   -speech-sdk                   │
+                    └───────────────┬─────────────────┘
+                                    │ WebSocket
+                                    ▼
+                    ┌─────────────────────────────────┐
+                    │   Azure Cognitive Services      │
+                    │   Speech Service (eastus)       │
+                    └─────────────────────────────────┘
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Layer | Technology |
+|-------|------------|
+| **Framework** | React 19 + TypeScript |
+| **Build** | Vite 7 |
+| **Styling** | Tailwind CSS 3 + custom glass morphism |
+| **Animation** | Framer Motion |
+| **State** | TanStack Query (React Query) |
+| **TTS** | Azure Cognitive Services Speech SDK |
+| **Testing** | Vitest + Testing Library |
+| **CI/CD** | GitHub Actions |
+| **Hosting** | Azure Static Web Apps |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- Azure Speech Service subscription (or use the deployed app)
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/kjingers/echo-bird.git
+cd echo-bird
 ```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create `.env` file with your Azure credentials:
+```bash
+cp .env.example .env
+# Edit .env with your Azure Speech key and region
+```
+
+4. Start development server:
+```bash
+npm run dev
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_AZURE_SPEECH_KEY` | Azure Speech Service subscription key |
+| `VITE_AZURE_SPEECH_REGION` | Azure region (e.g., `eastus`) |
+
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | TypeScript type check |
+| `npm run test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+| `npm run test:coverage` | Run tests with coverage |
+
+## Project Structure
+
+```
+src/
+├── components/       # React components
+│   ├── AudioPlayer.tsx
+│   ├── Button.tsx
+│   ├── ErrorDisplay.tsx
+│   ├── Header.tsx
+│   ├── LoadingSpinner.tsx
+│   ├── Select.tsx
+│   ├── TextArea.tsx
+│   └── TTSForm.tsx
+├── hooks/            # Custom React hooks
+│   ├── useSpeechSynthesis.ts
+│   └── useVoices.ts
+├── services/         # API services
+│   └── speechService.ts
+├── types/            # TypeScript types
+│   └── speech.ts
+├── utils/            # Utility functions
+│   └── helpers.ts
+└── test/             # Test setup
+    └── setup.ts
+```
+
+## Azure Resources
+
+| Resource | Name | Region |
+|----------|------|--------|
+| Resource Group | `echo-bird-rg` | East US |
+| Speech Service | `echo-bird-speech` | East US |
+| Static Web App | `echo-bird-app` | Central US |
+
+## License
+
+MIT
