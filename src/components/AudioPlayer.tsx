@@ -4,6 +4,14 @@ import { Play, Pause, RotateCcw, Download, Volume2 } from 'lucide-react';
 import { Button } from './Button';
 import { cn, formatDuration } from '@/utils';
 
+// Deterministic waveform bar heights (stable across renders)
+const WAVEFORM_HEIGHTS = [
+  31, 38, 25, 52, 39, 26, 43, 30, 47, 34,
+  21, 48, 35, 22, 49, 36, 23, 50, 37, 24,
+  41, 28, 45, 32, 19, 46, 33, 20, 47, 34,
+  21, 48, 35, 22, 49, 36, 23, 50, 37, 24,
+];
+
 interface AudioPlayerProps {
   src: string;
   onDownload?: () => void;
@@ -90,13 +98,13 @@ export function AudioPlayer({ src, onDownload, className }: AudioPlayerProps) {
       
       {/* Waveform visualization placeholder */}
       <div className="relative h-16 flex items-center justify-center gap-1 overflow-hidden">
-        {[...Array(40)].map((_, i) => (
+        {WAVEFORM_HEIGHTS.map((height, i) => (
           <motion.div
             key={i}
             className="w-1 bg-gradient-to-t from-cyan-500 to-purple-500 rounded-full"
             animate={{
               height: isPlaying 
-                ? [8, 20 + Math.random() * 32, 8]
+                ? [8, height, 8]
                 : 8,
             }}
             transition={{
