@@ -1,3 +1,5 @@
+export type VoiceCategory = 'Neural' | 'NeuralHD' | 'Multilingual';
+
 export interface Voice {
   name: string;
   displayName: string;
@@ -7,6 +9,7 @@ export interface Voice {
   gender: 'Male' | 'Female';
   styleList?: string[];
   voiceType: string;
+  category: VoiceCategory;
 }
 
 export interface VoiceStyle {

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Mic2, Wand2 } from 'lucide-react';
 import { useVoices, useSpeechSynthesis } from '@/hooks';
 import { getStyleDisplayName } from '@/utils';
+import type { VoiceCategory } from '@/types';
 import { Button } from './Button';
 import { TextArea } from './TextArea';
 import { Select } from './Select';
@@ -19,29 +20,41 @@ const SAMPLE_TEXTS = [
   "Once upon a time, in a land far, far away, there lived a curious little robot who dreamed of becoming a poet. Every night, under the starlit sky, it would compose verses about the beauty of the digital world.",
 ];
 
+const VOICE_TYPE_OPTIONS = [
+  { value: 'Neural', label: 'Neural' },
+  { value: 'NeuralHD', label: 'Neural HD' },
+  { value: 'Multilingual', label: 'Multilingual' },
+];
+
 export function TTSForm() {
   const [text, setText] = useState('');
+  const [selectedVoiceType, setSelectedVoiceType] = useState<VoiceCategory>('Neural');
   const [selectedVoice, setSelectedVoice] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('default');
   
   const { data: voices, isLoading: voicesLoading, error: voicesError, refetch } = useVoices();
   const { synthesize, audioUrl, status, error: synthesisError, download, reset } = useSpeechSynthesis();
 
+  // Filter voices by selected voice type
+  const filteredVoices = useMemo(() => {
+    if (!voices) return [];
+    return voices.filter(v => v.category === selectedVoiceType);
+  }, [voices, selectedVoiceType]);
+
   // Get available styles for selected voice
   const availableStyles = useMemo(() => {
-    if (!voices || !selectedVoice) return [];
-    const voice = voices.find(v => v.shortName === selectedVoice);
+    if (!filteredVoices || !selectedVoice) return [];
+    const voice = filteredVoices.find(v => v.shortName === selectedVoice);
     return voice?.styleList || [];
-  }, [voices, selectedVoice]);
+  }, [filteredVoices, selectedVoice]);
 
-  // Voice options for select
+  // Voice options for select (filtered by voice type)
   const voiceOptions = useMemo(() => {
-    if (!voices) return [];
-    return voices.map(v => ({
+    return filteredVoices.map(v => ({
       value: v.shortName,
       label: `${v.displayName} (${v.gender})`,
     }));
-  }, [voices]);
+  }, [filteredVoices]);
 
   // Style options for select
   const styleOptions = useMemo(() => {
@@ -69,6 +82,13 @@ export function TTSForm() {
   const handleUseSample = () => {
     const randomSample = SAMPLE_TEXTS[Math.floor(Math.random() * SAMPLE_TEXTS.length)];
     setText(randomSample);
+  };
+
+  const handleVoiceTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedVoiceType(e.target.value as VoiceCategory);
+    // Reset voice and style when voice type changes
+    setSelectedVoice('');
+    setSelectedStyle('default');
   };
 
   const handleVoiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -132,29 +152,42 @@ export function TTSForm() {
               onRetry={() => refetch()} 
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* Voice Type Selection */}
               <Select
-                label="Voice Actor"
-                options={voiceOptions}
-                value={selectedVoice}
-                onChange={handleVoiceChange}
-                placeholder="Select a voice..."
+                label="Voice Type"
+                options={VOICE_TYPE_OPTIONS}
+                value={selectedVoiceType}
+                onChange={handleVoiceTypeChange}
               />
               
-              <Select
-                label="Expression Style"
-                options={styleOptions}
-                value={selectedStyle}
-                onChange={(e) => setSelectedStyle(e.target.value)}
-                disabled={availableStyles.length === 0}
-              />
+              {/* Voice Actor and Expression Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Voice Actor"
+                  options={voiceOptions}
+                  value={selectedVoice}
+                  onChange={handleVoiceChange}
+                  placeholder="Select a voice..."
+                />
+                
+                {/* Only show Expression dropdown if voice has styles */}
+                {selectedVoice && availableStyles.length > 0 && (
+                  <Select
+                    label="Expression Style"
+                    options={styleOptions}
+                    value={selectedStyle}
+                    onChange={(e) => setSelectedStyle(e.target.value)}
+                  />
+                )}
+              </div>
+              
+              {voiceOptions.length === 0 && (
+                <p className="text-sm text-white/40">
+                  No voices available for this type. Try selecting a different voice type.
+                </p>
+              )}
             </div>
-          )}
-
-          {availableStyles.length === 0 && selectedVoice && (
-            <p className="text-sm text-white/40 mt-2">
-              This voice uses default expression only.
-            </p>
           )}
         </div>
 

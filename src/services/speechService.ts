@@ -1,8 +1,34 @@
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
-import type { Voice, SynthesisOptions, SynthesisResult } from '@/types';
+import type { Voice, VoiceCategory, SynthesisOptions, SynthesisResult } from '@/types';
 
 const SPEECH_KEY = import.meta.env.VITE_AZURE_SPEECH_KEY || '';
 const SPEECH_REGION = import.meta.env.VITE_AZURE_SPEECH_REGION || 'eastus';
+
+/**
+ * Determines the voice category based on voice name patterns
+ */
+function getVoiceCategory(voiceName: string, voiceType: sdk.SynthesisVoiceType): VoiceCategory | null {
+  // Skip standard (non-neural) voices entirely
+  if (voiceType !== sdk.SynthesisVoiceType.OnlineNeural) {
+    return null;
+  }
+  
+  // Check for HD voices (DragonHD, Phoenix patterns or explicit HD suffix)
+  if (voiceName.includes('DragonHD') || 
+      voiceName.includes('HD') ||
+      voiceName.includes('Phoenix')) {
+    return 'NeuralHD';
+  }
+  
+  // Check for multilingual voices
+  if (voiceName.includes('Multilingual') || 
+      voiceName.includes('MultilingualNeural')) {
+    return 'Multilingual';
+  }
+  
+  // Default neural voices
+  return 'Neural';
+}
 
 /**
  * Azure Speech Service wrapper for Text-to-Speech operations
@@ -37,25 +63,36 @@ export class SpeechService {
             return;
           }
           
-          const voices: Voice[] = result.voices.map((v: sdk.VoiceInfo) => ({
-            name: v.name,
-            displayName: v.displayName,
-            shortName: v.shortName,
-            locale: v.locale,
-            localeName: v.localeName,
-            gender: v.gender === sdk.SynthesisVoiceGender.Male ? 'Male' : 'Female',
-            styleList: v.styleList?.length ? v.styleList : undefined,
-            voiceType: v.voiceType === sdk.SynthesisVoiceType.OnlineNeural 
-              ? 'Neural' 
-              : 'Standard',
-          }));
+          const voices: Voice[] = [];
           
-          // Filter to only show Neural voices with English support for better demo
-          const filteredVoices = voices.filter(
-            (v) => v.voiceType === 'Neural' && v.locale.startsWith('en-')
-          );
+          for (const v of result.voices) {
+            const category = getVoiceCategory(v.name, v.voiceType);
+            
+            // Skip non-neural voices (Standard voices are excluded)
+            if (category === null) continue;
+            
+            // Only include English voices for better demo experience
+            if (!v.locale.startsWith('en-')) continue;
+            
+            voices.push({
+              name: v.name,
+              displayName: v.displayName,
+              shortName: v.shortName,
+              locale: v.locale,
+              localeName: v.localeName,
+              gender: v.gender === sdk.SynthesisVoiceGender.Male ? 'Male' : 'Female',
+              styleList: v.styleList?.length ? v.styleList : undefined,
+              voiceType: v.voiceType === sdk.SynthesisVoiceType.OnlineNeural 
+                ? 'Neural' 
+                : 'Standard',
+              category,
+            });
+          }
           
-          resolve(filteredVoices);
+          // Sort by display name
+          voices.sort((a, b) => a.displayName.localeCompare(b.displayName));
+          
+          resolve(voices);
         },
         (error: string) => {
           synthesizer.close();
