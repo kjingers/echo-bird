@@ -1,0 +1,12 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="birdGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <path d="M32 48C42 48 52 40 52 28C52 16 42 8 32 8C22 8 12 18 12 28C12 32 14 36 18 40L12 52L24 46C26.5 47.3 29.2 48 32 48Z" fill="url(#birdGradient)"/>
+  <circle cx="38" cy="24" r="3" fill="white"/>
+  <path d="M48 22L56 20L48 26Z" fill="#fbbf24"/>
+</svg>
