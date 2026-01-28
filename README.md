@@ -7,8 +7,9 @@ A modern, polished text-to-speech web application powered by Azure Cognitive Ser
 ## Features
 
 - **100+ Neural Voices** - Access to Azure's full library of neural TTS voices
+- **Voice Type Filter** - Filter by Neural (Expressive), Neural, Neural HD, or Multilingual voices
 - **Multi-language Support** - Voices in dozens of languages and locales
-- **Voice Styles** - Adjust speaking styles (cheerful, sad, angry, etc.) for supported voices
+- **Voice Styles** - Adjust speaking styles (cheerful, sad, angry, etc.) for expressive voices
 - **Real-time Synthesis** - Text-to-speech conversion happens in your browser
 - **Audio Player** - Built-in player with waveform visualization, progress bar, and volume control
 - **Download MP3** - Save synthesized audio as MP3 files
