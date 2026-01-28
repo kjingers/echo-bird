@@ -21,14 +21,18 @@ const SAMPLE_TEXTS = [
 ];
 
 const VOICE_TYPE_OPTIONS = [
+  { value: 'NeuralExpressive', label: 'Neural (Expressive)' },
   { value: 'Neural', label: 'Neural' },
   { value: 'NeuralHD', label: 'Neural HD' },
   { value: 'Multilingual', label: 'Multilingual' },
 ];
 
+// Voice types that support expression/style selection
+const EXPRESSIVE_VOICE_TYPES: VoiceCategory[] = ['NeuralExpressive'];
+
 export function TTSForm() {
   const [text, setText] = useState('');
-  const [selectedVoiceType, setSelectedVoiceType] = useState<VoiceCategory>('Neural');
+  const [selectedVoiceType, setSelectedVoiceType] = useState<VoiceCategory>('NeuralExpressive');
   const [selectedVoice, setSelectedVoice] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('default');
   
@@ -171,15 +175,21 @@ export function TTSForm() {
                   placeholder="Select a voice..."
                 />
                 
-                {/* Only show Expression dropdown if voice has styles */}
-                {selectedVoice && availableStyles.length > 0 && (
+                {/* Show Expression dropdown only for expressive voice types with styles */}
+                {EXPRESSIVE_VOICE_TYPES.includes(selectedVoiceType) && selectedVoice && availableStyles.length > 0 ? (
                   <Select
                     label="Expression Style"
                     options={styleOptions}
                     value={selectedStyle}
                     onChange={(e) => setSelectedStyle(e.target.value)}
                   />
-                )}
+                ) : selectedVoice && !EXPRESSIVE_VOICE_TYPES.includes(selectedVoiceType) ? (
+                  <div className="flex items-center">
+                    <p className="text-sm text-white/50 italic">
+                      This voice type doesn't support expressions. Select "Neural (Expressive)" for expressive voices.
+                    </p>
+                  </div>
+                ) : null}
               </div>
               
               {voiceOptions.length === 0 && (

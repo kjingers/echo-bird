@@ -1,4 +1,4 @@
-export type VoiceCategory = 'Neural' | 'NeuralHD' | 'Multilingual';
+export type VoiceCategory = 'NeuralExpressive' | 'Neural' | 'NeuralHD' | 'Multilingual';
 
 export interface Voice {
   name: string;

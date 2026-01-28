@@ -5,11 +5,15 @@ const SPEECH_KEY = import.meta.env.VITE_AZURE_SPEECH_KEY || '';
 const SPEECH_REGION = import.meta.env.VITE_AZURE_SPEECH_REGION || 'eastus';
 
 /**
- * Determines the voice category based on voice name patterns
+ * Determines the voice category based on voice name patterns and style support
+ * @param voiceName - The full voice name (e.g., "en-US-JennyNeural")
+ * @param isOnlineNeural - Whether the voice is an online neural voice
+ * @param hasStyles - Whether the voice has style/expression support
+ * @returns The voice category or null if the voice should be excluded
  */
-function getVoiceCategory(voiceName: string, voiceType: sdk.SynthesisVoiceType): VoiceCategory | null {
+export function getVoiceCategory(voiceName: string, isOnlineNeural: boolean, hasStyles: boolean): VoiceCategory | null {
   // Skip standard (non-neural) voices entirely
-  if (voiceType !== sdk.SynthesisVoiceType.OnlineNeural) {
+  if (!isOnlineNeural) {
     return null;
   }
   
@@ -26,7 +30,12 @@ function getVoiceCategory(voiceName: string, voiceType: sdk.SynthesisVoiceType):
     return 'Multilingual';
   }
   
-  // Default neural voices
+  // Neural voices with expression/style support
+  if (hasStyles) {
+    return 'NeuralExpressive';
+  }
+  
+  // Default neural voices (no expression support)
   return 'Neural';
 }
 
@@ -66,7 +75,9 @@ export class SpeechService {
           const voices: Voice[] = [];
           
           for (const v of result.voices) {
-            const category = getVoiceCategory(v.name, v.voiceType);
+            const hasStyles = !!(v.styleList?.length && v.styleList.length > 0);
+            const isOnlineNeural = v.voiceType === sdk.SynthesisVoiceType.OnlineNeural;
+            const category = getVoiceCategory(v.name, isOnlineNeural, hasStyles);
             
             // Skip non-neural voices (Standard voices are excluded)
             if (category === null) continue;

@@ -52,7 +52,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build frontend
         run: npm run build
         env:
           VITE_AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
