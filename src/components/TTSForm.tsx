@@ -11,7 +11,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { ErrorDisplay } from './ErrorDisplay';
 import { VoiceSkeleton } from './LoadingSpinner';
 
-const MAX_CHARS = 5000;
+const MAX_CHARS = 100000;
 
 const SAMPLE_TEXTS = [
   "Welcome to Echo Bird! I'm your friendly text-to-speech assistant. Try selecting different voices and styles to hear how I can transform your words into natural-sounding speech.",
