@@ -10,6 +10,7 @@ interface UseSpeechSynthesisReturn {
   status: SynthesisStatus;
   error: string | null;
   duration: number;
+  progress: { completed: number; total: number } | null;
   download: (filename?: string) => void;
   reset: () => void;
 }
@@ -20,7 +21,8 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const [status, setStatus] = useState<SynthesisStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
-  
+  const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
+
   const prevUrlRef = useRef<string | null>(null);
 
   const synthesize = useCallback(async (options: SynthesisOptions) => {
@@ -34,19 +36,24 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     setError(null);
     setAudioUrl(null);
     setAudioData(null);
+    setProgress(null);
 
     try {
-      const result = await speechService.synthesize(options);
+      const result = await speechService.synthesize(options, (completed, total) => {
+        setProgress({ completed, total });
+      });
       const url = createAudioUrl(result.audioData);
-      
+
       prevUrlRef.current = url;
       setAudioUrl(url);
       setAudioData(result.audioData);
       setDuration(result.audioDuration);
+      setProgress(null);
       setStatus('success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Synthesis failed';
       setError(message);
+      setProgress(null);
       setStatus('error');
     }
   }, []);
@@ -67,6 +74,7 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     setStatus('idle');
     setError(null);
     setDuration(0);
+    setProgress(null);
   }, []);
 
   return {
@@ -76,6 +84,7 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     status,
     error,
     duration,
+    progress,
     download,
     reset,
   };

@@ -37,7 +37,7 @@ export function TTSForm() {
   const [selectedStyle, setSelectedStyle] = useState('default');
   
   const { data: voices, isLoading: voicesLoading, error: voicesError, refetch } = useVoices();
-  const { synthesize, audioUrl, status, error: synthesisError, download, reset } = useSpeechSynthesis();
+  const { synthesize, audioUrl, status, error: synthesisError, progress, download, reset } = useSpeechSynthesis();
 
   // Filter voices by selected voice type
   const filteredVoices = useMemo(() => {
@@ -210,7 +210,11 @@ export function TTSForm() {
           disabled={!isFormValid || voicesLoading}
           isLoading={isLoading}
         >
-          {isLoading ? 'Generating Speech...' : 'Convert to Speech'}
+          {isLoading
+            ? progress && progress.total > 1
+              ? `Generating Speech... (${progress.completed}/${progress.total})`
+              : 'Generating Speech...'
+            : 'Convert to Speech'}
           {!isLoading && <Sparkles className="w-5 h-5" />}
         </Button>
       </form>

@@ -4,6 +4,60 @@ import type { Voice, VoiceCategory, SynthesisOptions, SynthesisResult } from '@/
 const SPEECH_KEY = import.meta.env.VITE_AZURE_SPEECH_KEY || '';
 const SPEECH_REGION = import.meta.env.VITE_AZURE_SPEECH_REGION || 'eastus';
 
+// Keep each synthesis request short to avoid WebSocket timeouts on long texts
+const CHUNK_SIZE = 3000;
+
+function splitTextIntoChunks(text: string, maxChunkSize: number = CHUNK_SIZE): string[] {
+  if (text.length <= maxChunkSize) return [text];
+
+  const chunks: string[] = [];
+  let remaining = text.trim();
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxChunkSize) {
+      chunks.push(remaining);
+      break;
+    }
+
+    const slice = remaining.slice(0, maxChunkSize);
+
+    // Prefer splitting after sentence-ending punctuation
+    const sentenceMatch = slice.match(/^[\s\S]*[.!?](?=\s|$)/);
+    let splitIdx = sentenceMatch ? sentenceMatch[0].length : -1;
+
+    // Fall back to last newline
+    if (splitIdx < 0) {
+      const newlineIdx = slice.lastIndexOf('\n');
+      if (newlineIdx > 0) splitIdx = newlineIdx + 1;
+    }
+
+    // Fall back to last space
+    if (splitIdx < 0) {
+      const spaceIdx = slice.lastIndexOf(' ');
+      if (spaceIdx > 0) splitIdx = spaceIdx + 1;
+    }
+
+    // Hard cut if no boundary found
+    if (splitIdx <= 0) splitIdx = maxChunkSize;
+
+    chunks.push(remaining.slice(0, splitIdx).trim());
+    remaining = remaining.slice(splitIdx).trim();
+  }
+
+  return chunks.filter(c => c.length > 0);
+}
+
+function concatenateArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+  const totalLength = buffers.reduce((sum, buf) => sum + buf.byteLength, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const buf of buffers) {
+    result.set(new Uint8Array(buf), offset);
+    offset += buf.byteLength;
+  }
+  return result.buffer;
+}
+
 /**
  * Determines the voice category based on voice name patterns and style support
  * @param voiceName - The full voice name (e.g., "en-US-JennyNeural")
@@ -154,26 +208,19 @@ export class SpeechService {
   }
 
   /**
-   * Synthesizes speech from text
+   * Synthesizes a single SSML chunk, returns raw result
    */
-  async synthesize(options: SynthesisOptions): Promise<SynthesisResult> {
-    if (!this.speechConfig) {
-      throw new Error('Speech service not configured. Please set VITE_AZURE_SPEECH_KEY.');
-    }
-
-    const synthesizer = new sdk.SpeechSynthesizer(this.speechConfig);
-    const ssml = this.generateSSML(options);
-
+  private synthesizeChunk(ssml: string): Promise<SynthesisResult> {
     return new Promise((resolve, reject) => {
+      const synthesizer = new sdk.SpeechSynthesizer(this.speechConfig!);
       synthesizer.speakSsmlAsync(
         ssml,
         (result: sdk.SpeechSynthesisResult) => {
           synthesizer.close();
-          
           if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
             resolve({
               audioData: result.audioData,
-              audioDuration: result.audioDuration / 10000, // Convert to ms
+              audioDuration: result.audioDuration / 10000,
             });
           } else if (result.reason === sdk.ResultReason.Canceled) {
             const cancellation = sdk.CancellationDetails.fromResult(result);
@@ -188,6 +235,37 @@ export class SpeechService {
         }
       );
     });
+  }
+
+  /**
+   * Synthesizes speech from text, chunking automatically for long inputs to
+   * avoid WebSocket timeouts. Calls onProgress(completedChunks, totalChunks)
+   * after each chunk finishes.
+   */
+  async synthesize(
+    options: SynthesisOptions,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<SynthesisResult> {
+    if (!this.speechConfig) {
+      throw new Error('Speech service not configured. Please set VITE_AZURE_SPEECH_KEY.');
+    }
+
+    const chunks = splitTextIntoChunks(options.text);
+    const audioBuffers: ArrayBuffer[] = [];
+    let totalDuration = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      const ssml = this.generateSSML({ ...options, text: chunks[i] });
+      const result = await this.synthesizeChunk(ssml);
+      audioBuffers.push(result.audioData);
+      totalDuration += result.audioDuration;
+      onProgress?.(i + 1, chunks.length);
+    }
+
+    return {
+      audioData: concatenateArrayBuffers(audioBuffers),
+      audioDuration: totalDuration,
+    };
   }
 
   /**
