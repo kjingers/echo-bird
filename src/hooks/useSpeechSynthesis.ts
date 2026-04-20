@@ -10,6 +10,7 @@ interface UseSpeechSynthesisReturn {
   status: SynthesisStatus;
   error: string | null;
   duration: number;
+  progress: { completed: number; total: number } | null;
   download: (filename?: string) => void;
   reset: () => void;
 }
@@ -20,7 +21,8 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const [status, setStatus] = useState<SynthesisStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
-  
+  const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
+
   const prevUrlRef = useRef<string | null>(null);
 
   const synthesize = useCallback(async (options: SynthesisOptions) => {
