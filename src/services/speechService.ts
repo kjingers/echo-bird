@@ -212,7 +212,8 @@ export class SpeechService {
    */
   private synthesizeChunk(ssml: string): Promise<SynthesisResult> {
     return new Promise((resolve, reject) => {
-      const synthesizer = new sdk.SpeechSynthesizer(this.speechConfig!);
+      // null audio config prevents the SDK from auto-playing each chunk through the speaker
+      const synthesizer = new sdk.SpeechSynthesizer(this.speechConfig!, null as unknown as sdk.AudioConfig);
       synthesizer.speakSsmlAsync(
         ssml,
         (result: sdk.SpeechSynthesisResult) => {
